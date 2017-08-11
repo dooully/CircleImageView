@@ -52,7 +52,9 @@ public class CircleImageView extends ImageView {
     private final RectF mBorderRect = new RectF();
 
     private final Matrix mShaderMatrix = new Matrix();
+    private final Matrix mShaderBackgroundMatrix = new Matrix();
     private final Paint mBitmapPaint = new Paint();
+    private final Paint mBitmapBackgroundPaint = new Paint();
     private final Paint mBorderPaint = new Paint();
     private final Paint mFillPaint = new Paint();
 
@@ -62,8 +64,13 @@ public class CircleImageView extends ImageView {
 
     private Bitmap mBitmap;
     private BitmapShader mBitmapShader;
-    private int mBitmapWidth;
     private int mBitmapHeight;
+    private int mBitmapWidth;
+    private Bitmap mBitmapBackground;
+    private BitmapShader mBitmapBackgroundShader;
+    private int mBitmapBackgroundWidth;
+    private int mBitmapBackgroundHeight;
+
 
     private float mDrawableRadius;
     private float mBorderRadius;
@@ -134,6 +141,10 @@ public class CircleImageView extends ImageView {
         if (mDisableCircularTransformation) {
             super.onDraw(canvas);
             return;
+        }
+
+        if(mBitmapBackground != null) {
+            canvas.drawCircle(mDrawableRect.centerX(), mDrawableRect.centerY(), mDrawableRadius, mBitmapBackgroundPaint);
         }
 
         if (mBitmap == null) {
@@ -371,6 +382,15 @@ public class CircleImageView extends ImageView {
             return;
         }
 
+
+        if(mBitmapBackground != null) {
+            mBitmapBackgroundShader = new BitmapShader(mBitmapBackground, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            mBitmapBackgroundPaint.setAntiAlias(true);
+            mBitmapBackgroundPaint.setShader(mBitmapBackgroundShader);
+            mBitmapBackgroundWidth = mBitmapBackground.getWidth();
+            mBitmapBackgroundHeight = mBitmapBackground.getHeight();
+        }
+
         mBitmapShader = new BitmapShader(mBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
 
         mBitmapPaint.setAntiAlias(true);
@@ -433,6 +453,39 @@ public class CircleImageView extends ImageView {
         mShaderMatrix.postTranslate((int) (dx + 0.5f) + mDrawableRect.left, (int) (dy + 0.5f) + mDrawableRect.top);
 
         mBitmapShader.setLocalMatrix(mShaderMatrix);
+
+
+        if(mBitmapBackgroundShader != null) {
+            mShaderBackgroundMatrix.set(null);
+
+            if (mBitmapBackgroundHeight * mDrawableRect.height() > mDrawableRect.width() * mBitmapBackgroundWidth) {
+                scale = mDrawableRect.height() / (float) mBitmapBackgroundHeight;
+                dx = (mDrawableRect.width() - mBitmapBackgroundWidth * scale) * 0.5f;
+            } else {
+                scale = mDrawableRect.width() / (float) mBitmapBackgroundWidth;
+                dy = (mDrawableRect.height() - mBitmapBackgroundHeight * scale) * 0.5f;
+            }
+
+            mShaderBackgroundMatrix.setScale(scale, scale);
+            mShaderBackgroundMatrix.postTranslate((int) (dx + 0.5f) + mDrawableRect.left, (int) (dy + 0.5f) + mDrawableRect.top);
+
+            mBitmapBackgroundShader.setLocalMatrix(mShaderBackgroundMatrix);
+        }
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        setBackgroundDrawable(background);
+}
+
+    @Override
+    public void setBackgroundDrawable(Drawable background) {
+        if(background instanceof BitmapDrawable) {
+            mBitmapBackground = ((BitmapDrawable)background).getBitmap();
+            initializeBitmap();
+        }
+//        super.setBackgroundDrawable(background);
     }
 
 }
+
